@@ -1,0 +1,84 @@
+project_name: homekit-ble-occupancy
+
+builds:
+  - <<: &build_defaults
+      binary: homekit-ble-occupancy
+      main: ./cmd/homekit-ble-occupancy
+      flags:
+        - -buildmode=pie
+        - -installsuffix=cgo
+        - -trimpath
+        - -tags="osusergo netgo static_build"
+      ldflags:
+        - -s -w -extldflags "-fno-PIC -Wl"
+        - -X github.com/axiomhq/pkg/version.release={{ .Version }}
+        - -X github.com/axiomhq/pkg/version.revision={{ .ShortCommit }}
+        - -X github.com/axiomhq/pkg/version.buildDate={{ .CommitDate }}
+        - -X github.com/axiomhq/pkg/version.buildUser=goreleaser
+      mod_timestamp: "{{ .CommitTimestamp }}"
+    id: darwin
+    goos:
+      - darwin
+    goarch:
+      - amd64
+
+  - <<: *build_defaults
+    id: linux
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+
+  - <<: *build_defaults
+    flags:
+      - -buildmode=exe
+    id: linux-no-pie
+    goos:
+      - linux
+    goarch:
+      - 386
+      - arm
+    goarm:
+      - 6
+      - 7
+
+archives:
+  - id: nix
+    builds:
+      - darwin
+      - linux
+      - linux-no-pie
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    wrap_in_directory: true
+    format: tar.gz
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: checksums.txt
+
+snapshot:
+  name_template: "{{ .Tag }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+
+milestones:
+  - repo:
+      owner: lukasmalkmus
+      name: homekit-ble-occupancy
+    close: true
+    fail_on_error: false
+
+release:
+  github:
+    owner: lukasmalkmus
+    name: homekit-ble-occupancy
+  prerelease: auto
+  name_template: "HomeKit Bluetooth Low Energy Occupancy Detection v{{ .Version }}"
